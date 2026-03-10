@@ -1,4 +1,19 @@
 export const milanunciosSelectors = {
+  categorySearchInput: [
+    'input[type="text"][placeholder*="Móvil" i]',
+    'input[type="text"][placeholder*="PlayStation" i]',
+    'input[type="text"][placeholder*="Sofá" i]',
+    'input[type="text"][placeholder*="publicar" i]',
+    'input[type="text"]',
+  ],
+
+  categorySuggestionItems: [
+    '[role="option"]',
+    'li',
+    'button',
+    'a',
+  ],
+
   title: [
     'input[name="title"]',
     'input[id*="title"]',
@@ -6,7 +21,6 @@ export const milanunciosSelectors = {
     'input[placeholder*="titulo" i]',
     'input[aria-label*="título" i]',
     'input[aria-label*="titulo" i]',
-    'input[type="text"]',
   ],
 
   description: [
@@ -14,6 +28,8 @@ export const milanunciosSelectors = {
     'textarea[id*="description"]',
     'textarea[placeholder*="descripción" i]',
     'textarea[placeholder*="descripcion" i]',
+    'textarea[aria-label*="descripción" i]',
+    'textarea[aria-label*="descripcion" i]',
     'textarea',
   ],
 
@@ -24,13 +40,19 @@ export const milanunciosSelectors = {
     'input[type="number"]',
   ],
 
-  imageInput: [
-    'input[type="file"]',
+  imageInput: ['input[type="file"]'],
+
+  loginIndicators: [
+    'a[href*="login"]',
+    'button:has-text("Iniciar sesión")',
+    'button:has-text("Acceder")',
   ],
 
-  submitButtons: [
-    'button[type="submit"]',
-    'button:has-text("Publicar")',
-    'button:has-text("Continuar")',
+  categoryIndicators: [
+    'input[type="text"][placeholder*="Móvil" i]',
+    'input[type="text"][placeholder*="PlayStation" i]',
+    'input[type="text"][placeholder*="Sofá" i]',
+    'text=Elige la categoría de tu anuncio',
+    'text=Dinos que quieres publicar',
   ],
 };

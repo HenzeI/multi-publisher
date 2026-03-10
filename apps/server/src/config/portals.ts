@@ -12,7 +12,7 @@ export const portalConfigs: Record<PortalKey, PortalConfig> = {
     key: "milanuncios",
     label: "Milanuncios",
     homeUrl: "https://www.milanuncios.com/",
-    publishUrl: "https://www.milanuncios.com/",
+    publishUrl: "https://www.milanuncios.com/publicar-anuncios-gratis/",
   },
   wallapop: {
     key: "wallapop",

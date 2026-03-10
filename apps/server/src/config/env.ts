@@ -38,10 +38,18 @@ if (!fs.existsSync(playwrightUserDataDir)) {
   fs.mkdirSync(playwrightUserDataDir, { recursive: true });
 }
 
+const debugDirRaw = process.env.DEBUG_DIR ?? "./debug";
+const debugDir = path.resolve(debugDirRaw);
+
+if (!fs.existsSync(debugDir)) {
+  fs.mkdirSync(debugDir, { recursive: true });
+}
+
 export const env = {
   port: Number(process.env.PORT ?? 3000),
   filesBaseDir,
   draftsDir,
   playwrightUserDataDir,
   playwrightHeadless: process.env.PLAYWRIGHT_HEADLESS === "true",
+  debugDir,
 };

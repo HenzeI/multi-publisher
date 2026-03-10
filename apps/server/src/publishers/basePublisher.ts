@@ -1,6 +1,9 @@
+import path from "node:path";
 import type { ListingDraft, PortalKey } from "@multi-publisher/shared";
-import type { Page } from "playwright";
+import type { Page } from "patchright";
+import { env } from "../config/env";
 import { launchPersistentBrowserSession } from "./browserManager";
+import { logStep, writeDebugText } from "./publisherLogger";
 
 export abstract class BasePublisher {
   protected abstract portalKey: PortalKey;
@@ -13,19 +16,32 @@ export abstract class BasePublisher {
     try {
       return await callback(page);
     } catch (error) {
-      console.error(`[${this.portalKey}] Error durante la automatización:`, error);
+      logStep(this.portalKey, `Error durante la automatización: ${String(error)}`);
 
       try {
+        const screenshotPath = path.join(
+          env.debugDir,
+          `${new Date().toISOString().replace(/[:.]/g, "-")}-${this.portalKey}-error.png`
+        );
+
         await page.screenshot({
-          path: `./debug-${this.portalKey}-${Date.now()}.png`,
+          path: screenshotPath,
           fullPage: true,
         });
 
         const html = await page.content();
-        console.log(`[${this.portalKey}] HTML recibido (primeros 2000 chars):`);
-        console.log(html.slice(0, 2000));
+        const bodyText = await page.locator("body").innerText().catch(() => "");
+
+        await writeDebugText(this.portalKey, "html", html);
+        await writeDebugText(this.portalKey, "body", bodyText);
+
+        logStep(this.portalKey, `Captura guardada en: ${screenshotPath}`);
+        logStep(this.portalKey, "Se han guardado HTML y texto de la página.");
       } catch (debugError) {
-        console.error(`[${this.portalKey}] Error generando diagnóstico:`, debugError);
+        logStep(
+          this.portalKey,
+          `No se pudo generar diagnóstico extra: ${String(debugError)}`
+        );
       }
 
       await page.pause();
@@ -33,6 +49,10 @@ export abstract class BasePublisher {
     } finally {
       await context.close();
     }
+  }
+
+  protected log(message: string): void {
+    logStep(this.portalKey, message);
   }
 
   protected async fillIfPresent(
@@ -44,11 +64,11 @@ export abstract class BasePublisher {
       const locator = page.locator(selector).first();
       const count = await locator.count();
 
-      console.log(`[${this.portalKey}] Probando selector: ${selector} -> ${count}`);
+      this.log(`Probando selector fill: ${selector} -> ${count}`);
 
       if (count > 0) {
         await locator.fill(value);
-        console.log(`[${this.portalKey}] Campo encontrado con selector: ${selector}`);
+        this.log(`Campo rellenado con selector: ${selector}`);
         return true;
       }
     }
@@ -59,9 +79,13 @@ export abstract class BasePublisher {
   protected async clickIfPresent(page: Page, selectors: string[]): Promise<boolean> {
     for (const selector of selectors) {
       const locator = page.locator(selector).first();
+      const count = await locator.count();
 
-      if (await locator.count()) {
+      this.log(`Probando selector click: ${selector} -> ${count}`);
+
+      if (count > 0) {
         await locator.click();
+        this.log(`Click ejecutado con selector: ${selector}`);
         return true;
       }
     }
@@ -76,9 +100,13 @@ export abstract class BasePublisher {
   ): Promise<boolean> {
     for (const selector of selectors) {
       const locator = page.locator(selector).first();
+      const count = await locator.count();
 
-      if (await locator.count()) {
+      this.log(`Probando selector files: ${selector} -> ${count}`);
+
+      if (count > 0) {
         await locator.setInputFiles(filePaths);
+        this.log(`Archivos asignados con selector: ${selector}`);
         return true;
       }
     }
@@ -86,7 +114,43 @@ export abstract class BasePublisher {
     return false;
   }
 
+  protected async dumpVisibleFields(page: Page): Promise<void> {
+    const fields = await page.locator("input, textarea, select").evaluateAll((elements) =>
+      elements.map((el) => ({
+        tag: el.tagName,
+        name: el.getAttribute("name"),
+        id: el.getAttribute("id"),
+        placeholder: el.getAttribute("placeholder"),
+        ariaLabel: el.getAttribute("aria-label"),
+        type: el.getAttribute("type"),
+        className: el.getAttribute("class"),
+      }))
+    );
+
+    await writeDebugText(this.portalKey, "fields", JSON.stringify(fields, null, 2));
+    this.log("Se ha guardado un volcado de campos visibles.");
+  }
+
+  protected async getFirstVisibleLocator(
+    page: Page,
+    selectors: string[]
+  ): Promise<import("patchright").Locator | null> {
+    for (const selector of selectors) {
+      const locator = page.locator(selector).first();
+      const count = await locator.count();
+
+      this.log(`Probando selector locator: ${selector} -> ${count}`);
+
+      if (count > 0) {
+        return locator;
+      }
+    }
+
+    return null;
+  }
+
   protected async pauseForManualReview(page: Page): Promise<void> {
+    this.log("Pausa manual activada.");
     await page.pause();
   }
 }
