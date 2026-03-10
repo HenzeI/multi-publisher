@@ -28,6 +28,12 @@ multi-publisher/
 
 ## Quickstart
 
+
+Para ejecutar los comandos npm en Windows escribe **S** en al ejecutar el el siguiente comando:
+```bash
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+```
+
 ```bash
 git clone https://github.com/HenzeI/multi-publisher.git
 cd multi-publisher
