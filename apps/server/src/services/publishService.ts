@@ -1,5 +1,5 @@
 import {
-  listingDraftSchema,
+  listingDraftPublishSchema,
   type ListingDraft,
   type PortalKey,
 } from "@multi-publisher/shared";
@@ -12,8 +12,18 @@ export interface PublishResult {
   message: string;
 }
 
+function getPublisherForPortal(portal: PortalKey) {
+  switch (portal) {
+    case "milanuncios":
+      return new MilanunciosPublisher();
+
+    case "wallapop":
+      throw new Error("Wallapop aún no está implementado.");
+  }
+}
+
 export async function publishListing(input: unknown): Promise<PublishResult> {
-  const parsed = listingDraftSchema.safeParse(input);
+  const parsed = listingDraftPublishSchema.safeParse(input);
 
   if (!parsed.success) {
     const firstIssue = parsed.error.issues[0];
@@ -30,21 +40,8 @@ export async function publishListing(input: unknown): Promise<PublishResult> {
   };
 
   for (const portal of normalizedListing.selectedPortals) {
-    switch (portal) {
-      case "milanuncios": {
-        const publisher = new MilanunciosPublisher();
-        await publisher.publish(normalizedListing);
-        break;
-      }
-
-      case "wallapop": {
-        throw new Error("Wallapop aún no está implementado.");
-      }
-
-      default: {
-        throw new Error(`Portal no soportado: ${String(portal)}`);
-      }
-    }
+    const publisher = getPublisherForPortal(portal);
+    await publisher.publish(normalizedListing);
   }
 
   return {

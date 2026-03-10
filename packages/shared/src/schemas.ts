@@ -10,27 +10,46 @@ export const conditionValueSchema = z.enum([
   "used",
 ]);
 
-export const listingDraftSchema = z
-  .object({
-    id: z.string().optional(),
+const listingDraftBaseSchema = z.object({
+  id: z.string().optional(),
 
-    title: z.string().trim().min(1, "El título es obligatorio."),
-    description: z.string().trim().min(1, "La descripción es obligatoria."),
-    price: z.number().nonnegative("El precio no puede ser negativo.").optional(),
-    category: z.string().trim().optional(),
-    subcategory: z.string().optional(),
-    condition: conditionValueSchema.optional(),
-    location: z.string().trim().optional(),
-    images: z.array(z.string().min(1)).default([]),
+  title: z.string().trim().default(""),
+  description: z.string().trim().default(""),
+  price: z.number().nonnegative("El precio no puede ser negativo.").optional(),
+  category: z.string().trim().optional(),
+  subcategory: z.string().default(""),
+  condition: conditionValueSchema.optional(),
+  location: z.string().trim().default(""),
+  images: z.array(z.string().min(1)).default([]),
 
-    attributes: z.record(z.string(), z.unknown()).default({}),
-    portalSettings: z
-      .record(portalKeySchema, z.record(z.string(), z.unknown()))
-      .default(() => ({ milanuncios: {}, wallapop: {} })),
+  attributes: z.record(z.string(), z.unknown()).default({}),
+  portalSettings: z
+    .record(portalKeySchema, z.record(z.string(), z.unknown()))
+    .default(() => ({ milanuncios: {}, wallapop: {} })),
 
-    selectedPortals: z.array(portalKeySchema).default([]),
-  })
-  .superRefine((data, ctx) => {
+  selectedPortals: z.array(portalKeySchema).default([]),
+});
+
+export const listingDraftSaveSchema = listingDraftBaseSchema;
+
+export const listingDraftPublishSchema = listingDraftBaseSchema.superRefine(
+  (data, ctx) => {
+    if (!data.title || data.title.trim() === "") {
+      ctx.addIssue({
+        code: "custom",
+        path: ["title"],
+        message: "El título es obligatorio.",
+      });
+    }
+
+    if (!data.description || data.description.trim() === "") {
+      ctx.addIssue({
+        code: "custom",
+        path: ["description"],
+        message: "La descripción es obligatoria.",
+      });
+    }
+
     if (data.price == null) {
       ctx.addIssue({
         code: "custom",
@@ -78,6 +97,8 @@ export const listingDraftSchema = z
         message: "Debes seleccionar al menos un portal.",
       });
     }
-  });
+  }
+);
 
-export type ListingDraftInput = z.infer<typeof listingDraftSchema>;
+export type ListingDraftSaveInput = z.infer<typeof listingDraftSaveSchema>;
+export type ListingDraftPublishInput = z.infer<typeof listingDraftPublishSchema>;

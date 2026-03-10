@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { publishListing } from "./lib/api";
 import { getVisibleFieldsByGroup } from "./lib/fieldUtils";
-import { validateListingDraft, type ValidationErrorMap } from "./lib/validation";
+import { validateListingDraftForPublish, type ValidationErrorMap, } from "./lib/validation";
 import { useListingDraft } from "./hooks/useListingDraft";
 import { Section } from "./components/Section";
 import { PortalSelector } from "./components/PortalSelector";
@@ -44,7 +44,7 @@ export default function App() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    const clientErrors = validateListingDraft(draft);
+    const clientErrors = validateListingDraftForPublish(draft);
     setFieldErrors(clientErrors);
 
     if (Object.keys(clientErrors).length > 0) {

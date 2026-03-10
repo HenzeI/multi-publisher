@@ -30,8 +30,18 @@ if (!fs.existsSync(draftsDir)) {
   fs.mkdirSync(draftsDir, { recursive: true });
 }
 
+const playwrightUserDataDirRaw =
+  process.env.PLAYWRIGHT_USER_DATA_DIR ?? "./.pw-user-data";
+const playwrightUserDataDir = path.resolve(playwrightUserDataDirRaw);
+
+if (!fs.existsSync(playwrightUserDataDir)) {
+  fs.mkdirSync(playwrightUserDataDir, { recursive: true });
+}
+
 export const env = {
   port: Number(process.env.PORT ?? 3000),
   filesBaseDir,
   draftsDir,
+  playwrightUserDataDir,
+  playwrightHeadless: process.env.PLAYWRIGHT_HEADLESS === "true",
 };

@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
 import {
-  listingDraftSchema,
+  listingDraftSaveSchema,
   type ListingDraft,
 } from "@multi-publisher/shared";
 import { env } from "../config/env";
@@ -46,7 +46,7 @@ async function readStoredDraftFromFile(fileName: string): Promise<StoredDraft> {
   const raw = await fs.readFile(fullPath, "utf-8");
   const parsed = JSON.parse(raw) as StoredDraft;
 
-  const listingParsed = listingDraftSchema.safeParse(parsed.listing);
+  const listingParsed = listingDraftSaveSchema.safeParse(parsed.listing);
 
   if (!listingParsed.success) {
     throw new Error(`El borrador ${fileName} no es válido.`);
@@ -60,7 +60,6 @@ async function readStoredDraftFromFile(fileName: string): Promise<StoredDraft> {
 
 export async function listDrafts(): Promise<DraftListItem[]> {
   const files = await fs.readdir(env.draftsDir);
-
   const jsonFiles = files.filter((file) => file.toLowerCase().endsWith(".json"));
 
   const drafts = await Promise.all(
@@ -92,7 +91,7 @@ export async function getDraftById(id: string): Promise<StoredDraft> {
 }
 
 export async function saveDraft(input: unknown): Promise<StoredDraft> {
-  const parsed = listingDraftSchema.safeParse(input);
+  const parsed = listingDraftSaveSchema.safeParse(input);
 
   if (!parsed.success) {
     const firstIssue = parsed.error.issues[0];
