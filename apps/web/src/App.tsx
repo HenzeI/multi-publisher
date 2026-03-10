@@ -1,17 +1,20 @@
 import { useMemo, useState } from "react";
 import { publishListing } from "./lib/api";
 import { getVisibleFieldsByGroup } from "./lib/fieldUtils";
+import { validateListingDraft, type ValidationErrorMap } from "./lib/validation";
 import { useListingDraft } from "./hooks/useListingDraft";
 import { Section } from "./components/Section";
 import { PortalSelector } from "./components/PortalSelector";
 import { FieldRenderer } from "./components/FieldRenderer";
+import { DraftManager } from "./components/DraftManager";
 
 export default function App() {
-  const { draft, updateField, togglePortal, resetDraft } = useListingDraft();
+  const { draft, updateField, togglePortal, resetDraft, loadDraft } = useListingDraft();
 
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<ValidationErrorMap>({});
 
   const generalFields = useMemo(
     () => getVisibleFieldsByGroup(draft, "general"),
@@ -40,6 +43,15 @@ export default function App() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    const clientErrors = validateListingDraft(draft);
+    setFieldErrors(clientErrors);
+
+    if (Object.keys(clientErrors).length > 0) {
+      setError("Revisa los campos obligatorios antes de publicar.");
+      setMessage("");
+      return;
+    }
 
     try {
       setSubmitting(true);
@@ -71,6 +83,21 @@ export default function App() {
         </p>
       </header>
 
+      <Section
+        title="Borradores"
+        description="Guarda, recarga y reutiliza anuncios en desarrollo."
+      >
+        <DraftManager
+          draft={draft}
+          onLoadDraft={(nextDraft) => {
+            loadDraft(nextDraft);
+            setFieldErrors({});
+            setError("");
+            setMessage("");
+          }}
+        />
+      </Section>
+
       <form onSubmit={handleSubmit}>
         <Section
           title="Portales"
@@ -80,6 +107,11 @@ export default function App() {
             selectedPortals={draft.selectedPortals}
             onToggle={togglePortal}
           />
+          {fieldErrors.selectedPortals ? (
+            <div style={{ marginTop: 8, color: "crimson", fontWeight: 600 }}>
+              {fieldErrors.selectedPortals}
+            </div>
+          ) : null}
         </Section>
 
         <Section title="Datos generales">
@@ -89,6 +121,7 @@ export default function App() {
               field={field}
               draft={draft}
               onChange={updateField}
+              error={fieldErrors[field.key]}
             />
           ))}
         </Section>
@@ -100,6 +133,7 @@ export default function App() {
               field={field}
               draft={draft}
               onChange={updateField}
+              error={fieldErrors[field.key]}
             />
           ))}
         </Section>
@@ -111,6 +145,7 @@ export default function App() {
               field={field}
               draft={draft}
               onChange={updateField}
+              error={fieldErrors[field.key]}
             />
           ))}
         </Section>
@@ -123,6 +158,11 @@ export default function App() {
                 field={field}
                 draft={draft}
                 onChange={updateField}
+                error={
+                  field.portal
+                    ? fieldErrors[`portalSettings.${field.portal}.${field.key}`]
+                    : undefined
+                }
               />
             ))}
           </Section>
@@ -136,6 +176,11 @@ export default function App() {
                 field={field}
                 draft={draft}
                 onChange={updateField}
+                error={
+                  field.portal
+                    ? fieldErrors[`portalSettings.${field.portal}.${field.key}`]
+                    : undefined
+                }
               />
             ))}
           </Section>
@@ -147,7 +192,16 @@ export default function App() {
               {submitting ? "Publicando..." : "Publicar"}
             </button>
 
-            <button type="button" onClick={resetDraft} disabled={submitting}>
+            <button
+              type="button"
+              onClick={() => {
+                resetDraft();
+                setFieldErrors({});
+                setError("");
+                setMessage("");
+              }}
+              disabled={submitting}
+            >
               Limpiar formulario
             </button>
           </div>

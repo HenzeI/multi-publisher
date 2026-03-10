@@ -76,3 +76,45 @@ export async function publishListing(listing: ListingDraft) {
     body: JSON.stringify(listing),
   });
 }
+
+export interface DraftListItem {
+  id: string;
+  title: string;
+  updatedAt: string;
+  createdAt: string;
+  fileName: string;
+}
+
+export interface StoredDraftResponse {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  listing: ListingDraft;
+}
+
+export async function listDrafts() {
+  return fetchJson<{ items: DraftListItem[] }>(`${API_BASE_URL}/drafts`);
+}
+
+export async function getDraft(id: string) {
+  return fetchJson<StoredDraftResponse>(`${API_BASE_URL}/drafts/${id}`);
+}
+
+export async function saveDraft(listing: ListingDraft) {
+  return fetchJson<{ message: string; item: StoredDraftResponse }>(
+    `${API_BASE_URL}/drafts`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(listing),
+    }
+  );
+}
+
+export async function deleteDraft(id: string) {
+  return fetchJson<{ message: string }>(`${API_BASE_URL}/drafts/${id}`, {
+    method: "DELETE",
+  });
+}

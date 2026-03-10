@@ -23,7 +23,15 @@ if (!fs.existsSync(filesBaseDir)) {
   );
 }
 
+const draftsDirRaw = process.env.DRAFTS_DIR ?? "../../data/drafts";
+const draftsDir = path.resolve(draftsDirRaw);
+
+if (!fs.existsSync(draftsDir)) {
+  fs.mkdirSync(draftsDir, { recursive: true });
+}
+
 export const env = {
   port: Number(process.env.PORT ?? 3000),
   filesBaseDir,
+  draftsDir,
 };

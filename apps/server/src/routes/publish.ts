@@ -1,13 +1,11 @@
 import { Router } from "express";
-import type { ListingDraft } from "@multi-publisher/shared";
 import { publishListing } from "../services/publishService";
 
 export const publishRouter = Router();
 
 publishRouter.post("/", async (req, res) => {
   try {
-    const listing = req.body as ListingDraft;
-    const result = await publishListing(listing);
+    const result = await publishListing(req.body);
 
     res.json(result);
   } catch (error) {

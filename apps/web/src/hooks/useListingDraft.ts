@@ -32,6 +32,10 @@ export function useListingDraft() {
     });
   };
 
+  const loadDraft = (nextDraft: ListingDraft) => {
+    setDraft(nextDraft);
+  };
+
   const resetDraft = () => {
     setDraft(createEmptyListingDraft());
   };
@@ -43,6 +47,7 @@ export function useListingDraft() {
       updateField,
       setImages,
       togglePortal,
+      loadDraft,
       resetDraft,
     }),
     [draft]

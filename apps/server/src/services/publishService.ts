@@ -1,4 +1,8 @@
-import type { ListingDraft, PortalKey } from "@multi-publisher/shared";
+import {
+  listingDraftSchema,
+  type ListingDraft,
+  type PortalKey,
+} from "@multi-publisher/shared";
 import { MilanunciosPublisher } from "../publishers/milanunciosPublisher";
 import { validateImagePaths } from "./fileBrowserService";
 
@@ -8,44 +12,15 @@ export interface PublishResult {
   message: string;
 }
 
-function validateListingDraft(listing: ListingDraft): void {
-  if (!listing.title.trim()) {
-    throw new Error("El título es obligatorio.");
+export async function publishListing(input: unknown): Promise<PublishResult> {
+  const parsed = listingDraftSchema.safeParse(input);
+
+  if (!parsed.success) {
+    const firstIssue = parsed.error.issues[0];
+    throw new Error(firstIssue?.message ?? "Datos del formulario no válidos.");
   }
 
-  if (!listing.description.trim()) {
-    throw new Error("La descripción es obligatoria.");
-  }
-
-  if (listing.price == null || Number.isNaN(Number(listing.price))) {
-    throw new Error("El precio es obligatorio.");
-  }
-
-  if (!listing.category?.trim()) {
-    throw new Error("La categoría es obligatoria.");
-  }
-
-  if (!listing.condition) {
-    throw new Error("El estado es obligatorio.");
-  }
-
-  if (!listing.location?.trim()) {
-    throw new Error("La ubicación es obligatoria.");
-  }
-
-  if (!listing.images.length) {
-    throw new Error("Debes seleccionar al menos una imagen.");
-  }
-
-  if (!listing.selectedPortals.length) {
-    throw new Error("Debes seleccionar al menos un portal.");
-  }
-}
-
-export async function publishListing(
-  listing: ListingDraft
-): Promise<PublishResult> {
-  validateListingDraft(listing);
+  const listing: ListingDraft = parsed.data;
 
   const validatedImages = await validateImagePaths(listing.images);
 
@@ -67,7 +42,7 @@ export async function publishListing(
       }
 
       default: {
-        throw new Error(`Portal no soportado: ${portal satisfies never}`);
+        throw new Error(`Portal no soportado: ${String(portal)}`);
       }
     }
   }

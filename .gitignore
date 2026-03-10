@@ -2,4 +2,4 @@ apps/server/node_modules/
 apps/server/.env
 apps/web/node_modules/
 packages/shared/node_modules/
-./node_modules
+node_modules/
