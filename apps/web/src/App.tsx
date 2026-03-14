@@ -2,11 +2,13 @@ import { useMemo, useState } from "react";
 import { publishListing } from "./lib/api";
 import { getVisibleFieldsByGroup } from "./lib/fieldUtils";
 import { validateListingDraftForPublish, type ValidationErrorMap, } from "./lib/validation";
+import { enrichFieldWithCategoryOptions } from "./lib/categoryFieldUtils";
 import { useListingDraft } from "./hooks/useListingDraft";
 import { Section } from "./components/Section";
 import { PortalSelector } from "./components/PortalSelector";
 import { FieldRenderer } from "./components/FieldRenderer";
 import { DraftManager } from "./components/DraftManager";
+import { getPortalCategoryPath } from "@multi-publisher/shared";
 
 export default function App() {
   const { draft, updateField, togglePortal, resetDraft, loadDraft } = useListingDraft();
@@ -115,15 +117,19 @@ export default function App() {
         </Section>
 
         <Section title="Datos generales">
-          {generalFields.map((field) => (
-            <FieldRenderer
-              key={`${field.section}-${field.key}-${field.portal ?? "common"}`}
-              field={field}
-              draft={draft}
-              onChange={updateField}
-              error={fieldErrors[field.key]}
-            />
-          ))}
+          {generalFields.map((field) => {
+            const enrichedField = enrichFieldWithCategoryOptions(field, draft);
+
+            return (
+              <FieldRenderer
+                key={`${field.section}-${field.key}-${field.portal ?? "common"}`}
+                field={enrichedField}
+                draft={draft}
+                onChange={updateField}
+                error={fieldErrors[field.key]}
+              />
+            );
+          })}
         </Section>
 
         <Section title="Detalles del producto">
@@ -185,6 +191,39 @@ export default function App() {
             ))}
           </Section>
         ) : null}
+
+        <Section title="Mapeo de categorías por portal">
+          <div style={{ display: "grid", gap: 10 }}>
+            {draft.selectedPortals.length === 0 ? (
+              <div style={{ color: "#666" }}>No hay portales seleccionados.</div>
+            ) : (
+              draft.selectedPortals.map((portal) => {
+                const path = getPortalCategoryPath(
+                  portal,
+                  draft.category,
+                  draft.subcategory
+                );
+
+                return (
+                  <div
+                    key={portal}
+                    style={{
+                      border: "1px solid #ddd",
+                      borderRadius: 8,
+                      padding: 10,
+                      background: "#fafafa",
+                    }}
+                  >
+                    <strong>{portal}</strong>
+                    <div style={{ marginTop: 6 }}>
+                      {path ? path.join(" > ") : "No hay mapeo definido todavía."}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </Section>
 
         <Section title="Acciones">
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>

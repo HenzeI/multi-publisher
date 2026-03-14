@@ -153,4 +153,45 @@ export abstract class BasePublisher {
     this.log("Pausa manual activada.");
     await page.pause();
   }
+
+  protected normalizeText(value: string): string {
+    return value
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  protected async clickElementContainingText(
+    page: Page,
+    text: string,
+    selectors: string[]
+  ): Promise<boolean> {
+    const normalizedTarget = this.normalizeText(text);
+
+    for (const selector of selectors) {
+      const locator = page.locator(selector);
+      const count = await locator.count();
+
+      this.log(`Buscando texto "${text}" en selector ${selector} -> ${count}`);
+
+      for (let i = 0; i < count; i += 1) {
+        const item = locator.nth(i);
+        const itemText = this.normalizeText((await item.innerText().catch(() => "")) || "");
+
+        if (!itemText) {
+          continue;
+        }
+
+        if (itemText.includes(normalizedTarget)) {
+          this.log(`Coincidencia encontrada para "${text}" en selector ${selector}`);
+          await item.click();
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
 }

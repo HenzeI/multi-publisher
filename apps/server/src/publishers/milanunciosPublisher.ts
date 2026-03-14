@@ -1,5 +1,6 @@
 import type { Page } from "patchright";
 import type { ListingDraft } from "@multi-publisher/shared";
+import { getPortalCategoryPath } from "@multi-publisher/shared";
 import { portalConfigs } from "../config/portals";
 import { BasePublisher } from "./basePublisher";
 import { milanunciosSelectors } from "./milanuncios.selectors";
@@ -24,7 +25,6 @@ export class MilanunciosPublisher extends BasePublisher {
       });
 
       await page.waitForTimeout(2000);
-
       this.log(`URL actual: ${page.url()}`);
 
       const state = await this.detectPageState(page);
@@ -44,9 +44,26 @@ export class MilanunciosPublisher extends BasePublisher {
       const stateAfterLogin = await this.detectPageState(page);
       this.log(`Estado tras posible login: ${stateAfterLogin}`);
 
+      const categoryPath = getPortalCategoryPath(
+        "milanuncios",
+        listing.category,
+        listing.subcategory
+      );
+
+      this.log(
+        `Ruta de categoría interna para Milanuncios: ${
+          categoryPath ? categoryPath.join(" > ") : "sin mapeo"
+        }`
+      );
+
       if (stateAfterLogin === "category") {
-        this.log("Se ha detectado pantalla de categoría. Intentando resolverla automáticamente.");
-        await this.selectCategoryUsingSearch(page, listing);
+        if (!categoryPath) {
+          throw new Error(
+            "No existe un mapeo de categoría para Milanuncios con la categoría/subcategoría seleccionada."
+          );
+        }
+
+        await this.selectCategoryPath(page, categoryPath);
       }
 
       const stateAfterCategory = await this.detectPageState(page);
@@ -107,6 +124,59 @@ export class MilanunciosPublisher extends BasePublisher {
   private async hasAnySelector(page: Page, selectors: string[]): Promise<boolean> {
     for (const selector of selectors) {
       if ((await page.locator(selector).count()) > 0) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private async selectCategoryPath(page: Page, path: string[]): Promise<void> {
+    this.log(`Intentando navegar ruta de categoría: ${path.join(" > ")}`);
+
+    for (const step of path) {
+      const clicked = await this.trySelectCategoryStep(page, step);
+
+      if (!clicked) {
+        await this.dumpVisibleFields(page);
+        throw new Error(
+          `No se pudo seleccionar el paso de categoría "${step}" en Milanuncios.`
+        );
+      }
+
+      this.log(`Paso de categoría seleccionado: ${step}`);
+      await page.waitForTimeout(1500);
+    }
+  }
+
+  private async trySelectCategoryStep(page: Page, step: string): Promise<boolean> {
+    const clickedByText = await this.clickElementContainingText(
+      page,
+      step,
+      milanunciosSelectors.categoryClickableContainers
+    );
+
+    if (clickedByText) {
+      return true;
+    }
+
+    const searchInput = await this.getFirstVisibleLocator(
+      page,
+      milanunciosSelectors.categorySearchInput
+    );
+
+    if (searchInput) {
+      await searchInput.fill(step);
+      this.log(`Paso escrito en buscador de categoría: ${step}`);
+      await page.waitForTimeout(1200);
+
+      const clickedSuggestion = await this.clickElementContainingText(
+        page,
+        step,
+        milanunciosSelectors.categorySuggestionItems
+      );
+
+      if (clickedSuggestion) {
         return true;
       }
     }
@@ -235,49 +305,5 @@ export class MilanunciosPublisher extends BasePublisher {
         location
       );
     }
-  }
-
-  private async selectCategoryUsingSearch(
-    page: Page,
-    listing: ListingDraft
-  ): Promise<void> {
-    this.log("Intentando seleccionar categoría usando el buscador previo...");
-
-    const searchInput = await this.getFirstVisibleLocator(
-      page,
-      milanunciosSelectors.categorySearchInput
-    );
-
-    if (!searchInput) {
-      await this.dumpVisibleFields(page);
-      throw new Error(
-        "No se encontró el buscador de categoría de Milanuncios."
-      );
-    }
-
-    await searchInput.click();
-    await searchInput.fill(listing.title);
-
-    this.log(`Texto escrito en buscador de categoría: ${listing.title}`);
-
-    await page.waitForTimeout(1500);
-
-    for (const selector of milanunciosSelectors.categorySuggestionItems) {
-      const locator = page.locator(selector);
-
-      const count = await locator.count();
-      this.log(`Probando sugerencias con selector ${selector} -> ${count}`);
-
-      if (count > 0) {
-        const firstVisible = locator.first();
-        await firstVisible.click();
-        this.log(`Sugerencia seleccionada con selector: ${selector}`);
-        await page.waitForTimeout(2000);
-        return;
-      }
-    }
-
-    this.log("No se encontró una sugerencia clara. Se requiere intervención manual.");
-    await this.pauseForManualReview(page);
   }
 }

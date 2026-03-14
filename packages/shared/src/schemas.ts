@@ -66,6 +66,14 @@ export const listingDraftPublishSchema = listingDraftBaseSchema.superRefine(
       });
     }
 
+    if (!data.subcategory || data.subcategory.trim() === "") {
+      ctx.addIssue({
+        code: "custom",
+        path: ["subcategory"],
+        message: "La subcategoría es obligatoria.",
+      });
+    }
+
     if (!data.condition) {
       ctx.addIssue({
         code: "custom",

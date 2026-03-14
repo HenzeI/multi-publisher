@@ -9,7 +9,18 @@ export function useListingDraft() {
   const [draft, setDraft] = useState<ListingDraft>(createEmptyListingDraft());
 
   const updateField = (field: FieldDefinition, value: unknown) => {
-    setDraft((current) => setDraftValue(current, field, value));
+    setDraft((current) => {
+      const next = setDraftValue(current, field, value);
+
+      if (field.section === "root" && field.key === "category") {
+        return {
+          ...next,
+          subcategory: "",
+        };
+      }
+
+      return next;
+    });
   };
 
   const setImages = (images: string[]) => {

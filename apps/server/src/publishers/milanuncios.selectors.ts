@@ -14,6 +14,16 @@ export const milanunciosSelectors = {
     'a',
   ],
 
+  categoryClickableContainers: [
+    'button',
+    'a',
+    'li',
+    '[role="button"]',
+    '[role="option"]',
+    'div',
+    'span',
+  ],
+
   title: [
     'input[name="title"]',
     'input[id*="title"]',
