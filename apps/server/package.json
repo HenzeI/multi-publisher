@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "extract:milanuncios:categories": "ts-node src/scripts/extractMilanunciosCategories.ts"
+    "extract:milanuncios:categories": "ts-node src/scripts/extractMilanunciosCategories.ts",
+    "build:milanuncios:taxonomy": "ts-node src/scripts/buildMilanunciosTaxonomyFromPaths.ts"
   },
   "keywords": [],
   "author": "",
